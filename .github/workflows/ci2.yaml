@@ -1,0 +1,31 @@
+name: Continuous Integration
+on: [pull_request]
+
+jobs:
+  build-test:
+    name: Build and Test
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - id: get_pr
+        name: Get pull request ref
+        run: |
+          PR=$(echo $GITHUB_REF | sed -e "s/[^0-9]//g")
+          echo ::set-output name=pr::$PR
+      - name: Run script
+        run: |
+          sh command.sh ${{ steps.get_pr.outputs.pr }}
+      - name: Create comment
+        run: |
+          cat << EOF > comment
+          Comment on ${{ steps.get_pr.outputs.pr }}
+          EOF
+      - name: Post comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ github.event.pull_request.html_url }}
+        run:
+          gh pr comment -F ./comment "${URL}"
+
